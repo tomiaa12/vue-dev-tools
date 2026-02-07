@@ -8,7 +8,7 @@
 <div id="app">{{ message }}</div>
 
 <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/tomiaa12/vue-dev-tools@cdn-v1.0.8/vue-devtools-standalone.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/tomiaa12/vue-dev-tools@cdn/vue-devtools-standalone.min.js"></script>
 
 <script>
   // 先初始化 DevTools
@@ -36,7 +36,7 @@
 <div id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/tomiaa12/vue-dev-tools@cdn-v1.0.8/vue-devtools-standalone.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/tomiaa12/vue-dev-tools@cdn/vue-devtools-standalone.min.js"></script>
 
 <script>
   const { createApp } = Vue;
@@ -65,7 +65,7 @@
 ```js
 (() => {
   const DEVTOOLS_URL =
-    "https://cdn.jsdelivr.net/gh/tomiaa12/vue-dev-tools@cdn-v1.0.8/vue-devtools-standalone.min.js";
+    "https://cdn.jsdelivr.net/gh/tomiaa12/vue-dev-tools@cdn/vue-devtools-standalone.min.js";
 
   const loadScript = (src) =>
     new Promise((resolve, reject) => {
