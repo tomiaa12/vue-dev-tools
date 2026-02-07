@@ -1,0 +1,3 @@
+[submodule "vendor/vue-devtools-plugin"]
+	path = vendor/vue-devtools-plugin
+	url = https://github.com/Zippowxk/vue-devtools-plugin.git
