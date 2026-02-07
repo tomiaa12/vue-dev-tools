@@ -1,0 +1,123 @@
+name: Build standalone and publish to jsDelivr (cdn branch)
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_tag:
+        description: "Optional. Used to name the cdn tag (e.g. v2.0.0). If empty, uses manual-<run_number>."
+        required: false
+        type: string
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cdn-standalone-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Enable corepack (yarn)
+        run: corepack enable
+
+      - name: Install vendor dependencies
+        run: yarn --cwd vendor/vue-devtools-plugin install --frozen-lockfile
+
+      - name: Build standalone
+        run: yarn --cwd vendor/vue-devtools-plugin build:standalone
+
+      - name: Publish standalone to cdn branch and tag
+        shell: bash
+        env:
+          INPUT_SOURCE_TAG: ${{ inputs.source_tag }}
+        run: |
+          set -euo pipefail
+
+          SOURCE_TAG=""
+          if [[ -n "${INPUT_SOURCE_TAG}" ]]; then
+            SOURCE_TAG="${INPUT_SOURCE_TAG}"
+          elif [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+            SOURCE_TAG="${GITHUB_REF_NAME}"
+          else
+            SOURCE_TAG="manual-${GITHUB_RUN_NUMBER}"
+          fi
+
+          CDN_BRANCH="cdn"
+          CDN_TAG="cdn-${SOURCE_TAG}"
+
+          echo "SOURCE_TAG=${SOURCE_TAG}"
+          echo "CDN_BRANCH=${CDN_BRANCH}"
+          echo "CDN_TAG=${CDN_TAG}"
+
+          STANDALONE_DIST="vendor/vue-devtools-plugin/packages/standalone/dist"
+          if [[ ! -d "${STANDALONE_DIST}" ]]; then
+            echo "Missing ${STANDALONE_DIST}"
+            exit 1
+          fi
+
+          # White-list artifacts
+          files=(
+            "vue-devtools-standalone.min.js"
+            "vue-devtools-standalone.min.js.map"
+            "vue-devtools-standalone.js"
+            "vue-devtools-standalone.js.map"
+            "vue-devtools-standalone.esm.js"
+            "vue-devtools-standalone.esm.js.map"
+          )
+
+          tmpdir="$(mktemp -d)"
+          copied=0
+          for f in "${files[@]}"; do
+            if [[ -f "${STANDALONE_DIST}/${f}" ]]; then
+              cp "${STANDALONE_DIST}/${f}" "${tmpdir}/${f}"
+              copied=$((copied + 1))
+            fi
+          done
+
+          if [[ "${copied}" -eq 0 ]]; then
+            echo "No standalone artifacts found in ${STANDALONE_DIST}"
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Avoid destructive tag rewrite.
+          if git ls-remote --tags origin "refs/tags/${CDN_TAG}" | grep -q "${CDN_TAG}$"; then
+            echo "Remote tag already exists: ${CDN_TAG}"
+            exit 1
+          fi
+
+          # Orphan branch containing only standalone artifacts at repo root.
+          git checkout --orphan "${CDN_BRANCH}"
+          git clean -fdx
+          cp -R "${tmpdir}/." .
+          touch .nojekyll
+
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to publish."
+          else
+            git commit -m "chore(cdn): publish standalone for ${SOURCE_TAG}"
+          fi
+
+          git push --force origin "${CDN_BRANCH}"
+
+          git tag "${CDN_TAG}"
+          git push origin "${CDN_TAG}"
