@@ -1,0 +1,14 @@
+{
+  "name": "vue-devtools-standalone-build",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "submodule:update": "git submodule update --init --recursive",
+    "vendor:install": "corepack enable && yarn --cwd vendor/vue-devtools-plugin install --frozen-lockfile",
+    "build": "node scripts/build-standalone.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
+
