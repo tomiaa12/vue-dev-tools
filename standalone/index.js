@@ -58,14 +58,15 @@ function createContainer(options = {}) {
   // 默认样式
   const defaultStyle = {
     position: 'fixed',
-    right: '20px',
-    bottom: '20px',
-    width: '800px',
-    height: '600px',
+    left: '0',
+    right: '0',
+    bottom: '0',
+    width: '100vw',
+    height: '50vh',
     zIndex: '999999',
     backgroundColor: '#fff',
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-    borderRadius: '8px',
+    borderRadius: '12px 12px 0 0',
     display: 'none',
     flexDirection: 'column',
     overflow: 'hidden'
