@@ -32,9 +32,6 @@
     </style>
   </head>
   <body>
-    <h2>Vue 2 Demo</h2>
-    <div class="tip">本页从 <code>./dist/vue-devtools-standalone.min.js</code> 引入。</div>
-
     <div id="app">
       <div>message: {{ message }}</div>
       <div>count: {{ count }}</div>
@@ -42,27 +39,35 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
-    <script src="./dist/vue-devtools-standalone.min.js"></script>
     <script>
-      // 先初始化 DevTools
-      VueDevtoolsStandalone.createVueDevtools({ autoShow: true })
+      function boot() {
+        // 先初始化 DevTools
+        VueDevtoolsStandalone.createVueDevtools({ autoShow: true })
 
-      // 启用 Vue devtools
-      Vue.config.devtools = true
+        // 启用 Vue devtools
+        Vue.config.devtools = true
 
-      // 再创建 Vue 应用
-      const vm = new Vue({
-        el: "#app",
-        data: {
-          message: "Hello Vue 2!",
-          count: 0
-        }
-      })
+        // 再创建 Vue 应用
+        new Vue({
+          el: "#app",
+          data: {
+            message: "Hello Vue 2!",
+            count: 0
+          }
+        })
 
-      // 如果没有自动检测到（少数场景），手动通知
-      setTimeout(() => {
-        window.__VUE_DEVTOOLS_GLOBAL_HOOK__?.emit("init", Vue)
-      }, 100)
+        // 如果没有自动检测到（少数场景），手动通知
+        setTimeout(() => {
+          window.__VUE_DEVTOOLS_GLOBAL_HOOK__?.emit("init", Vue)
+        }, 100)
+      }
+
+      ;(function loadStandalone() {
+        const s = document.createElement("script")
+        s.src = "./vue-devtools-standalone.min.js"
+        s.onload = boot
+        document.head.appendChild(s)
+      })()
     </script>
   </body>
 </html>

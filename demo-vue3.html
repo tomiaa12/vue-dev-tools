@@ -33,42 +33,50 @@
   </head>
   <body>
     <h2>Vue 3 Demo</h2>
-    <div class="tip">本页从 <code>./dist/vue-devtools-standalone.min.js</code> 引入。</div>
+    <div class="tip">本页从站点根目录引入：<code>/vue-devtools-standalone.min.js</code>（匹配 cdn 分支）。</div>
 
     <div id="app"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
-    <script src="./dist/vue-devtools-standalone.min.js"></script>
     <script>
-      const { createApp, ref } = Vue
+      function boot() {
+        const { createApp, ref } = Vue
 
-      // 先初始化 DevTools
-      VueDevtoolsStandalone.createVueDevtools({ autoShow: true })
+        // 先初始化 DevTools
+        VueDevtoolsStandalone.createVueDevtools({ autoShow: true })
 
-      const app = createApp({
-        setup() {
-          const message = ref("Hello Vue 3!")
-          const count = ref(0)
-          return { message, count }
-        },
-        template: `
-          <div>
-            <div>message: {{ message }}</div>
-            <div>count: {{ count }}</div>
-            <button @click="count++">+1</button>
-          </div>
-        `
-      })
+        const app = createApp({
+          setup() {
+            const message = ref("Hello Vue 3!")
+            const count = ref(0)
+            return { message, count }
+          },
+          template: `
+            <div>
+              <div>message: {{ message }}</div>
+              <div>count: {{ count }}</div>
+              <button @click="count++">+1</button>
+            </div>
+          `
+        })
 
-      // 启用 Vue devtools
-      app.config.devtools = true
+        // 启用 Vue devtools
+        app.config.devtools = true
 
-      app.mount("#app")
+        app.mount("#app")
 
-      // 如果没有自动检测到（少数场景），手动通知
-      setTimeout(() => {
-        window.__VUE_DEVTOOLS_GLOBAL_HOOK__?.emit("app:init", app)
-      }, 100)
+        // 如果没有自动检测到（少数场景），手动通知
+        setTimeout(() => {
+          window.__VUE_DEVTOOLS_GLOBAL_HOOK__?.emit("app:init", app)
+        }, 100)
+      }
+
+      ;(function loadStandalone() {
+        const s = document.createElement("script")
+        s.src = "./vue-devtools-standalone.min.js"
+        s.onload = boot
+        document.head.appendChild(s)
+      })()
     </script>
   </body>
 </html>
