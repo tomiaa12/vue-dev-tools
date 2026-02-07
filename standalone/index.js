@@ -128,7 +128,7 @@ function createContainer(options = {}) {
 
   const iframe = document.createElement('iframe')
   iframe.id = 'vue-devtools-iframe'
-  iframe.style.cssText = 'width: 100%; height: 100%; border: none;'
+  iframe.style.cssText = 'width: 102%; height: 102%; border: none;'
   iframe.__vdevtools__injected = true
 
   iframeWrapper.appendChild(iframe)
