@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vue 3 + Vue DevTools Standalone (local dist)</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        margin: 24px;
+        line-height: 1.5;
+      }
+      .tip {
+        color: #666;
+        margin-bottom: 12px;
+      }
+      #app {
+        padding: 12px;
+        border: 1px solid #eee;
+        border-radius: 8px;
+      }
+      button {
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #f6f6f6;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Vue 3 Demo</h2>
+    <div class="tip">本页从 <code>./dist/vue-devtools-standalone.min.js</code> 引入。</div>
+
+    <div id="app"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script src="./dist/vue-devtools-standalone.min.js"></script>
+    <script>
+      const { createApp, ref } = Vue
+
+      // 先初始化 DevTools
+      VueDevtoolsStandalone.createVueDevtools({ autoShow: true })
+
+      const app = createApp({
+        setup() {
+          const message = ref("Hello Vue 3!")
+          const count = ref(0)
+          return { message, count }
+        },
+        template: `
+          <div>
+            <div>message: {{ message }}</div>
+            <div>count: {{ count }}</div>
+            <button @click="count++">+1</button>
+          </div>
+        `
+      })
+
+      // 启用 Vue devtools
+      app.config.devtools = true
+
+      app.mount("#app")
+
+      // 如果没有自动检测到（少数场景），手动通知
+      setTimeout(() => {
+        window.__VUE_DEVTOOLS_GLOBAL_HOOK__?.emit("app:init", app)
+      }, 100)
+    </script>
+  </body>
+</html>
+

@@ -33,14 +33,8 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Enable corepack (yarn)
-        run: corepack enable
-
-      - name: Install vendor dependencies
-        run: yarn --cwd vendor/vue-devtools-plugin install --frozen-lockfile
-
-      - name: Build standalone
-        run: yarn --cwd vendor/vue-devtools-plugin build:standalone
+      - name: Build standalone (root script)
+        run: npm run build
 
       - name: Publish standalone to cdn branch and tag
         shell: bash
@@ -65,9 +59,9 @@ jobs:
           echo "CDN_BRANCH=${CDN_BRANCH}"
           echo "CDN_TAG=${CDN_TAG}"
 
-          STANDALONE_DIST="vendor/vue-devtools-plugin/packages/standalone/dist"
+          STANDALONE_DIST="dist"
           if [[ ! -d "${STANDALONE_DIST}" ]]; then
-            echo "Missing ${STANDALONE_DIST}"
+            echo "Missing ${STANDALONE_DIST} (root build output)"
             exit 1
           fi
 

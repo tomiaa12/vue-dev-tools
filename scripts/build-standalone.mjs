@@ -4,7 +4,11 @@ import path from 'node:path';
 
 const repoRoot = process.cwd();
 const vendorRoot = path.join(repoRoot, 'vendor', 'vue-devtools-plugin');
-const standaloneDist = path.join(vendorRoot, 'packages', 'standalone', 'dist');
+const vendorWebpackConfigPath = path.join(vendorRoot, 'webpack.config.js');
+const vendorStandaloneRoot = path.join(vendorRoot, 'packages', 'standalone');
+const vendorStandaloneIndexPath = path.join(vendorStandaloneRoot, 'index.js');
+const vendorStandaloneDist = path.join(vendorStandaloneRoot, 'dist');
+const standaloneSourcePath = path.join(repoRoot, 'standalone', 'index.js');
 const outDir = path.join(repoRoot, 'dist');
 
 function run(cmd, args, opts = {}) {
@@ -33,6 +37,54 @@ function copyIfExists(src, destDir) {
   return true;
 }
 
+function ensureStandaloneFiles() {
+  if (!fs.existsSync(standaloneSourcePath)) {
+    console.error(`Missing standalone source: ${path.relative(repoRoot, standaloneSourcePath)}`);
+    process.exit(1);
+  }
+
+  fs.mkdirSync(vendorStandaloneRoot, { recursive: true });
+  fs.copyFileSync(standaloneSourcePath, vendorStandaloneIndexPath);
+}
+
+function ensureVendorWebpackStandaloneConfig() {
+  if (!fs.existsSync(vendorWebpackConfigPath)) {
+    console.error(`Missing vendor webpack config: ${vendorWebpackConfigPath}`);
+    process.exit(1);
+  }
+
+  const content = fs.readFileSync(vendorWebpackConfigPath, 'utf8');
+  if (content.includes('packages/standalone/index.js')) return;
+
+  // The vendor config exports an array: module.exports = [ {...}, {...} ]
+  // Insert a third object *before* the final closing `]` (after the last `}`).
+  const idx = content.lastIndexOf(']');
+  if (idx === -1) {
+    console.error('Failed to patch vendor webpack config (unexpected format).');
+    process.exit(1);
+  }
+
+  const snippet = `,
+{
+  entry: {
+    "vue-devtools-standalone.min": Path.resolve(__dirname, "./packages/standalone/index.js")
+  },
+  output: {
+    path: Path.resolve(__dirname, "./packages/standalone/dist"),
+    filename: "[name].js",
+    library: "VueDevtoolsStandalone",
+    libraryTarget: "umd",
+    umdNamedDefine: true,
+    globalObject: "this"
+  },
+  ...common
+}
+`;
+
+  const patched = content.slice(0, idx) + snippet + content.slice(idx);
+  fs.writeFileSync(vendorWebpackConfigPath, patched, 'utf8');
+}
+
 // 1) install + build in vendor
 if (!fs.existsSync(path.join(vendorRoot, 'package.json'))) {
   console.error('Missing submodule. Run: git submodule update --init --recursive');
@@ -40,12 +92,14 @@ if (!fs.existsSync(path.join(vendorRoot, 'package.json'))) {
 }
 
 run('corepack', ['enable']);
+ensureStandaloneFiles();
+ensureVendorWebpackStandaloneConfig();
 run('yarn', ['--cwd', vendorRoot, 'install', '--frozen-lockfile']);
-run('yarn', ['--cwd', vendorRoot, 'build:standalone']);
+run('yarn', ['--cwd', vendorRoot, 'build']);
 
 // 2) copy artifacts to ./dist (white-list)
-if (!fs.existsSync(standaloneDist)) {
-  console.error(`Standalone dist not found: ${standaloneDist}`);
+if (!fs.existsSync(vendorStandaloneDist)) {
+  console.error(`Standalone dist not found: ${vendorStandaloneDist}`);
   process.exit(1);
 }
 
@@ -62,7 +116,7 @@ const expected = [
 
 let copied = 0;
 for (const f of expected) {
-  const ok = copyIfExists(path.join(standaloneDist, f), outDir);
+  const ok = copyIfExists(path.join(vendorStandaloneDist, f), outDir);
   if (ok) copied++;
 }
 
