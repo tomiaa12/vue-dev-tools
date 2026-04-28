@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vue 2 + Vue DevTools Standalone (local dist)</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        margin: 24px;
+        line-height: 1.5;
+      }
+      .tip {
+        color: #666;
+        margin-bottom: 12px;
+      }
+      #app {
+        padding: 12px;
+        border: 1px solid #eee;
+        border-radius: 8px;
+      }
+      button {
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #f6f6f6;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div>message: {{ message }}</div>
+      <div>count: {{ count }}</div>
+      <button @click="count++">+1</button>
+    </div>
+    <div id="devtools" style="height: 420px; margin-top: 16px; border: 1px solid #eee; border-radius: 8px;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script>
+      function boot() {
+        // 先初始化 DevTools
+        VueDevtoolsStandalone.createVueDevtools({
+          target: document.getElementById("devtools")
+        })
+
+        // 启用 Vue devtools
+        Vue.config.devtools = true
+
+        // 再创建 Vue 应用
+        new Vue({
+          el: "#app",
+          data: {
+            message: "Hello Vue 2!",
+            count: 0
+          }
+        })
+
+        // 如果没有自动检测到（少数场景），手动通知
+        setTimeout(() => {
+          window.__VUE_DEVTOOLS_GLOBAL_HOOK__?.emit("init", Vue)
+        }, 100)
+      }
+
+      ;(function loadStandalone() {
+        const s = document.createElement("script")
+        s.src = "./vue-devtools-standalone.min.js"
+        s.onload = boot
+        document.head.appendChild(s)
+      })()
+    </script>
+  </body>
+</html>
+
