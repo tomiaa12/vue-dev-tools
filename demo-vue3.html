@@ -36,6 +36,7 @@
     <div class="tip">本页从站点根目录引入：<code>/vue-devtools-standalone.min.js</code>（匹配 cdn 分支）。</div>
 
     <div id="app"></div>
+    <div id="devtools" style="height: 420px; margin-top: 16px; border: 1px solid #eee; border-radius: 8px;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
     <script>
@@ -43,7 +44,9 @@
         const { createApp, ref } = Vue
 
         // 先初始化 DevTools
-        VueDevtoolsStandalone.createVueDevtools({ autoShow: true })
+        VueDevtoolsStandalone.createVueDevtools({
+          target: document.getElementById("devtools")
+        })
 
         const app = createApp({
           setup() {

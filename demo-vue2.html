@@ -37,12 +37,15 @@
       <div>count: {{ count }}</div>
       <button @click="count++">+1</button>
     </div>
+    <div id="devtools" style="height: 420px; margin-top: 16px; border: 1px solid #eee; border-radius: 8px;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
     <script>
       function boot() {
         // 先初始化 DevTools
-        VueDevtoolsStandalone.createVueDevtools({ autoShow: true })
+        VueDevtoolsStandalone.createVueDevtools({
+          target: document.getElementById("devtools")
+        })
 
         // 启用 Vue devtools
         Vue.config.devtools = true

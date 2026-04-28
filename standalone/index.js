@@ -21,6 +21,88 @@ const once = (fn) => {
 
 const injectOnce = once(inject)
 
+function getVue2BaseVue() {
+  // Nuxt (Vue 2)
+  let Vue = window.$nuxt?.$root?.constructor
+  if (Vue) {
+    while (Vue.super) Vue = Vue.super
+    return Vue
+  }
+
+  // Global Vue (Vue 2 CDN)
+  if (window.Vue?.config) return window.Vue
+
+  // Scan DOM for Vue 2 instances
+  try {
+    const walker = document.createTreeWalker(
+      document.documentElement,
+      NodeFilter.SHOW_ELEMENT
+    )
+    let node = walker.currentNode
+    while (node) {
+      const vm = node.__vue__
+      if (vm) {
+        Vue = Object.getPrototypeOf(vm).constructor
+        while (Vue.super) Vue = Vue.super
+        return Vue
+      }
+      node = walker.nextNode()
+    }
+  } catch (_) {
+    // Ignore
+  }
+
+  return null
+}
+
+function tryInitVue2() {
+  const hook = window.__VUE_DEVTOOLS_GLOBAL_HOOK__
+  if (!hook?.emit) return false
+
+  const Vue = getVue2BaseVue()
+  if (!Vue) return false
+
+  // Let legacy scan include root instances.
+  if (Vue.config) Vue.config.devtools = true
+  hook.emit('init', Vue)
+  return true
+}
+
+function tryInitVue3() {
+  const hook = window.__VUE_DEVTOOLS_GLOBAL_HOOK__
+  if (!hook?.emit) return false
+
+  try {
+    const apps = new Set()
+    const walker = document.createTreeWalker(
+      document.documentElement,
+      NodeFilter.SHOW_ELEMENT
+    )
+    let node = walker.currentNode
+    while (node) {
+      const app = node.__vue_app__
+      if (app) apps.add(app)
+      node = walker.nextNode()
+    }
+
+    if (apps.size) {
+      for (const app of apps) {
+        hook.emit('app:init', app, app.version, {})
+      }
+      return true
+    }
+  } catch (_) {
+    // Ignore
+  }
+
+  return false
+}
+
+function tryInitExistingApps() {
+  tryInitVue2()
+  tryInitVue3()
+}
+
 function inject(scriptContent) {
   if (!contentWindow || !contentWindow.document) {
     console.error('ContentWindow is not ready')
@@ -51,7 +133,7 @@ function inject(scriptContent) {
   doc.body.appendChild(script)
 }
 
-function createContainer(options = {}) {
+function createFloatingContainer(options = {}) {
   const container = document.createElement('div')
   container.id = 'vue-devtools-standalone'
 
@@ -177,6 +259,30 @@ function createContainer(options = {}) {
   return { container, iframe }
 }
 
+function createEmbeddedContainer(options = {}) {
+  const container = document.createElement('div')
+  container.id = 'vue-devtools-standalone'
+
+  const defaultStyle = {
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#fff',
+    overflow: 'hidden'
+  }
+
+  Object.assign(container.style, defaultStyle, options.containerStyle || {})
+
+  const iframe = document.createElement('iframe')
+  iframe.id = 'vue-devtools-iframe'
+  iframe.style.cssText = 'width: 100%; height: 100%; border: none; display: block;'
+  iframe.__vdevtools__injected = true
+
+  container.appendChild(iframe)
+
+  return { container, iframe }
+}
+
 function createToggleButton(options = {}) {
   const button = document.createElement('button')
   button.id = 'vue-devtools-toggle'
@@ -216,11 +322,14 @@ function createToggleButton(options = {}) {
 }
 
 export function createVueDevtools(options = {}) {
+  const hasTarget = !!options.target
   const target = options.target || document.body
-  const showButton = options.showButton !== false
-  const autoShow = options.autoShow === true
+  const showButton = !hasTarget && options.showButton !== false
+  const autoShow = !hasTarget && options.autoShow === true
 
-  const { container, iframe } = createContainer(options)
+  const { container, iframe } = hasTarget
+    ? createEmbeddedContainer(options)
+    : createFloatingContainer(options)
   containerElement = container
   target.appendChild(container)
 
@@ -235,6 +344,11 @@ export function createVueDevtools(options = {}) {
     setTimeout(() => {
       injectOnce(injectString)
     }, 100)
+
+    // Support "load devtools after the page is already running".
+    tryInitExistingApps()
+    setTimeout(tryInitExistingApps, 500)
+    setTimeout(tryInitExistingApps, 2000)
   }
 
   if (iframe.contentWindow && iframe.contentWindow.document.readyState === 'complete') {
@@ -254,12 +368,16 @@ export function createVueDevtools(options = {}) {
     })
   }
 
-  setTimeout(() => {
-    const closeBtn = container.querySelector('#vue-devtools-close')
-    const minimizeBtn = container.querySelector('#vue-devtools-minimize')
-    if (closeBtn) closeBtn.addEventListener('click', hide)
-    if (minimizeBtn) minimizeBtn.addEventListener('click', hide)
-  }, 100)
+  if (!hasTarget) {
+    setTimeout(() => {
+      const closeBtn = container.querySelector('#vue-devtools-close')
+      const minimizeBtn = container.querySelector('#vue-devtools-minimize')
+      if (closeBtn) closeBtn.addEventListener('click', hide)
+      if (minimizeBtn) minimizeBtn.addEventListener('click', hide)
+    }, 100)
+  } else {
+    isVisible = true
+  }
 
   if (autoShow) {
     setTimeout(() => show(), 200)
